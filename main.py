@@ -10,7 +10,11 @@ FONT = pygame.freetype.Font('fonts/Arial.ttf', constants.FONT_SIZE)
 pygame.display.set_caption('Game of Life Simulation')
 
 class Game():
-  def __init__(self):
+  def __init__(self, speed, square_size):
+    # optional argument values
+    self.speed = speed
+    self.square_size = Cell.SQUARE_SIZE = square_size
+
     # initialize display
     self.display = pygame.display.set_mode((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
     self.display.fill(constants.COLORS['black'])
@@ -89,16 +93,16 @@ class Game():
     """
       Add cells to the world; make sure there are cells outside the visible world so that objects can go outside
     """
-    for i in range(-10, int(constants.WORLD_SIZE / constants.SQUARE_SIZE) + 10):
+    for i in range(-10, int(constants.WORLD_SIZE / self.square_size) + 10):
       row = []
-      for j in range(-10, int(constants.WORLD_SIZE / constants.SQUARE_SIZE) + 10):
+      for j in range(-10, int(constants.WORLD_SIZE / self.square_size) + 10):
         square = Cell(self.display, 0)
-        square.draw(constants.COLORS['black'], (i * constants.SQUARE_SIZE, j * constants.SQUARE_SIZE))
+        square.draw(constants.COLORS['black'], (i * self.square_size, j * self.square_size))
         row.append(square)
       self.cells.append(row)
 
   def run_simulation(self):
-    pygame.time.set_timer(SIMULATE_EVENT, constants.SPEED)
+    pygame.time.set_timer(SIMULATE_EVENT, self.speed)
     self.game_started = True
     self.game_over = False
     self.game_paused = False
@@ -220,6 +224,7 @@ class Cell():
   """
     Represents a single cell in the world
   """
+  SQUARE_SIZE = None
   def __init__(self, display, state):
     # state 0 = dead cell, state 1 = live cell
     self.state = state 
@@ -230,12 +235,38 @@ class Cell():
 
   def draw(self, color, pos):
     self.pos = pos
-    self.rect_square = pygame.Rect(pos[0], pos[1], constants.SQUARE_SIZE, constants.SQUARE_SIZE)
+    self.rect_square = pygame.Rect(pos[0], pos[1], Cell.SQUARE_SIZE, Cell.SQUARE_SIZE)
     pygame.draw.rect(self.display, color, self.rect_square) 
 
-def run_game():
-  game = Game()
-  game.run()  
+def run_game(speed, square_size):
+  game = Game(speed, square_size)
+  game.run() 
+
+def convert_or_error(val):
+  try:
+    v = int(val)
+    return v
+  except ValueError:
+    print('ERROR: Invalid value provided.')
+    sys.exit()
 
 if __name__ == '__main__':
-  run_game()
+  # user can pass in at most 2 optional arguments that set the speed and the size of a cell, respectively
+  # -s [speed], -c [cell_size]
+  speed = constants.SPEED
+  square_size = constants.SQUARE_SIZE
+
+  if len(sys.argv) > 1: 
+    for i in range(len(sys.argv)):
+      if sys.argv[i] == '-s' and i + 1 < len(sys.argv):
+        speed = convert_or_error(sys.argv[i + 1])
+      elif sys.argv[i] == '-s' and i + 1 >= len(sys.argv):
+        print('ERROR: Missing value for speed.')
+        sys.exit()
+      elif sys.argv[i] == '-c' and i + 1 < len(sys.argv):
+        square_size = convert_or_error(sys.argv[i + 1])
+      elif sys.argv[i] == '-c' and i + 1 >= len(sys.argv):
+        print('ERROR: Missing value for cell size.')
+        sys.exit()
+
+  run_game(speed, square_size)
